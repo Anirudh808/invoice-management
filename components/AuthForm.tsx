@@ -23,7 +23,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { FIELD_TYPES } from "@/lib/helpers";
+import { AUTH_FIELD_TYPES } from "@/lib/helpers";
 import Loader from "./ui/loader";
 import { Bounce, Slide, toast } from "react-toastify";
 
@@ -140,8 +140,8 @@ const AuthForm = <T extends FieldValues>({
                           <Input
                             required
                             type={
-                              FIELD_TYPES[
-                                field.name as keyof typeof FIELD_TYPES
+                              AUTH_FIELD_TYPES[
+                                field.name as keyof typeof AUTH_FIELD_TYPES
                               ]
                             }
                             {...field}
@@ -154,6 +154,7 @@ const AuthForm = <T extends FieldValues>({
                 ))}
                 <Button
                   type="submit"
+                  disabled={loading}
                   className="bg-linear-to-r from-blue-400 to-purple-700 via-purple-500 text-xl text-white rounded-full py-2 cursor-pointer hover:shadow-sm active:scale-99 focus:outline-purple-400 mt-2 w-full"
                 >
                   {loading ? (

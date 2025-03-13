@@ -1,11 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { compare } from "bcryptjs";
-import NextAuth from "next-auth";
+import NextAuth, { NextAuthConfig } from "next-auth";
+
 import CredentialsProvider from "next-auth/providers/credentials";
 
 const prisma = new PrismaClient();
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+export const authOptions: NextAuthConfig = {
   session: {
     strategy: "jwt",
   },
@@ -16,15 +17,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
         const user = await prisma.user.findFirst({
-          where: {
-            email: credentials?.email,
-          },
+          where: { email: credentials.email },
         });
 
         if (!user) {
           return null;
         }
-        console.log(`From auth.ts user: ${user}`);
+
         const isPasswordValid = await compare(
           credentials.password.toString(),
           user.password
@@ -34,11 +33,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        };
+        return { id: user.id, email: user.email, name: user.name };
       },
     }),
   ],
@@ -51,7 +46,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.name = user.name;
       }
-
       return token;
     },
     async session({ session, token }) {
@@ -59,8 +53,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.id = token.id as string;
         session.user.name = token.name as string;
       }
-
       return session;
     },
   },
-});
+};
+
+// Export NextAuth handler
+export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);

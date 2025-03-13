@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import "../globals.css";
-import { ReactQueryProvider } from "@/components/ReactQueryProvider";
+import "@/app/globals.css";
+import { AppSidebar } from "@/components/Sidebar";
+
+import { auth } from "@/auth";
+import { Session } from "next-auth";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -17,11 +20,14 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // const session = await auth();
+  const session = await auth();
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased`}>
-        <ReactQueryProvider>{children}</ReactQueryProvider>
+        <div className="flex">
+          <AppSidebar session={session as Session} />
+          <div className="flex-1 overflow-auto p-4">{children}</div>
+        </div>
       </body>
     </html>
   );

@@ -2,7 +2,7 @@
 "use server";
 
 import { AuthCredentials } from "@/types";
-import { db } from "./db";
+import { db } from "../db";
 import { hash } from "bcryptjs";
 import { signIn } from "@/auth";
 
