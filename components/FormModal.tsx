@@ -1,6 +1,16 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { format } from "date-fns";
+import { Calendar as CalendarIcon } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   DefaultValues,
@@ -29,7 +39,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { X } from "lucide-react";
-
+import { Client } from "@/types";
 interface Props<T extends FieldValues> {
   schema: ZodType<T>;
   defaultValues: T;
@@ -43,6 +53,7 @@ interface Props<T extends FieldValues> {
     | "EDIT_INVOICE";
   isOpen: boolean;
   onClose: () => void;
+  clients?: Client[];
 }
 
 const FormModal = <T extends FieldValues>({
@@ -52,20 +63,23 @@ const FormModal = <T extends FieldValues>({
   type,
   isOpen,
   onClose,
+  clients,
 }: Props<T>) => {
   const form = useForm<T>({
     resolver: zodResolver(schema),
     defaultValues: defaultValues as DefaultValues<T>,
   });
+  const [date, setDate] = React.useState<Date>();
 
   useEffect(() => {
-    if (!isOpen) {
-      form.reset(defaultValues); // Reset form fields when modal closes
+    if (isOpen) {
+      form.reset(defaultValues);
     }
-  }, [isOpen, form.reset, defaultValues]);
+  }, [isOpen]);
 
   const handleSubmit: SubmitHandler<T> = async (data) => {
-    const result = await onSubmit(data);
+    const projectData = { ...data, dueDate: date };
+    const result = await onSubmit(projectData);
     if (result.success) {
       form.reset(); // Reset form after successful submission
       onClose(); // Close modal
@@ -102,14 +116,59 @@ const FormModal = <T extends FieldValues>({
                 name={field as Path<T>}
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="capitalize">{field.name}</FormLabel>
+                    <FormLabel className="capitalize">
+                      {field.name === "clientId" ? "Select Client" : field.name}
+                    </FormLabel>
                     <FormControl>
-                      <input
-                        required
-                        placeholder={`Enter ${field.name}`}
-                        {...field}
-                      />
+                      {field.name === "dueDate" ? (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-[280px] justify-start text-left font-normal"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {date ? (
+                                format(date, "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={date}
+                              onSelect={setDate}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      ) : field.name === "clientId" &&
+                        type === "ADD_PROJECT" ? (
+                        <select
+                          name="client"
+                          onChange={(e) =>
+                            field.onChange(Number(e.target.value))
+                          }
+                        >
+                          {clients?.map((client) => (
+                            <option key={client.id} value={client.id}>
+                              {client.name}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          required
+                          placeholder={`Enter ${field.name}`}
+                          {...field}
+                        />
+                      )}
                     </FormControl>
+
                     <FormMessage />
                   </FormItem>
                 )}

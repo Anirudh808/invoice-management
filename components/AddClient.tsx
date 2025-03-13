@@ -15,7 +15,7 @@ type DataProp = {
   address: string;
 };
 
-const FormModalTrigger = () => {
+const AddClient = () => {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const queryClient = useQueryClient();
 
@@ -53,4 +53,4 @@ const FormModalTrigger = () => {
   );
 };
 
-export default FormModalTrigger;
+export default AddClient;

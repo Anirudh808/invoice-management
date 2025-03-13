@@ -1,5 +1,5 @@
 import ClientTable from "@/components/ClientTable";
-import FormModalTrigger from "@/components/FormModalTrigger";
+import AddClient from "@/components/AddClient";
 import FileDownload from "@/components/icons/FileDownload";
 import { Button } from "@/components/ui/button";
 
@@ -18,7 +18,7 @@ export default async function page() {
           >
             <FileDownload className="" /> Export
           </Button>
-          <FormModalTrigger />
+          <AddClient />
         </div>
       </div>
       <div className="w-full h-0.5 bg-slate-300 my-4"></div>

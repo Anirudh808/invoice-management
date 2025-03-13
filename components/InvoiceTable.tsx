@@ -1,35 +1,42 @@
 "use client";
 
-import { IconSearch } from "@tabler/icons-react";
-import { FileDown, ListFilter, Pencil, Trash2 } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { Button } from "./ui/button";
-import axios from "axios";
 import { Invoice } from "@/types";
-import MainLoader from "./ui/MainLoader";
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-} from "@/components/ui/pagination";
+import { useQuery } from "@tanstack/react-query";
+import { getInvoices } from "@/lib/utils";
+import Table from "./Table";
 
 const InvoiceTable = () => {
-  const [invoices, setInvoice] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(false);
-
+  const { data: invoices, isLoading } = useQuery<Invoice[]>({
+    queryKey: ["invoices"],
+    queryFn: getInvoices,
+  });
+  const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
+  const [projectSortOrder, setProjectSortOrder] = useState("desc");
+  const [amountSortOrder, setAmountSortOrder] = useState("desc");
+  const [dueDateSortOrder, setDueDateSortOrder] = useState("desc");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const invoicePerPage = 8;
+  const invoicesPerPage = 8;
+  let totalPages = 0;
+  let currentInvoices: Invoice[] = [];
 
-  const totalPages = Math.ceil(invoices.length / invoicePerPage);
+  if (filteredInvoices.length > 0) {
+    totalPages = Math.ceil(filteredInvoices.length / invoicesPerPage);
 
-  const indexOfLastInvoice = currentPage * invoicePerPage;
-  const indexOfFirstInvoice = indexOfLastInvoice - invoicePerPage;
-  const currentInvoices = invoices.slice(
-    indexOfFirstInvoice,
-    indexOfLastInvoice
-  );
+    const indexOfLastInvoice = currentPage * invoicesPerPage;
+    const indexOfFirstInvoice = indexOfLastInvoice - invoicesPerPage;
+    currentInvoices = filteredInvoices.slice(
+      indexOfFirstInvoice,
+      indexOfLastInvoice
+    );
+  }
+
+  useEffect(() => {
+    if (invoices) {
+      setFilteredInvoices(invoices);
+    }
+  }, [invoices]);
 
   const nextPage = () => {
     if (currentPage < totalPages) {
@@ -43,163 +50,111 @@ const InvoiceTable = () => {
     }
   };
 
-  useEffect(() => {
-    async function getClients() {
-      try {
-        setLoading(true);
-        const response = await axios.get("/api/invoices");
-        const data = response.data;
-        setInvoice(data.invoices);
-      } catch (error) {
-        console.error("Error fetching clients:", error);
-        setInvoice([]);
-      } finally {
-        setLoading(false);
-      }
+  function sortByProject() {
+    if (projectSortOrder === "desc") {
+      const sortedByProject = filteredInvoices.sort((a, b) =>
+        a.project.title.localeCompare(b.project.title)
+      );
+      setFilteredInvoices(sortedByProject);
+      setProjectSortOrder("asc");
+    } else {
+      const sortedByProject = filteredInvoices.sort((a, b) =>
+        b.project.title.localeCompare(a.project.title)
+      );
+      setFilteredInvoices(sortedByProject);
+      setProjectSortOrder("desc");
     }
+  }
 
-    getClients();
-  }, []);
+  function sortByAmount() {
+    if (amountSortOrder === "desc") {
+      const sortedByAmount = filteredInvoices.sort(
+        (a, b) => a.amount - b.amount
+      );
+      setFilteredInvoices(sortedByAmount);
+      setAmountSortOrder("asc");
+    } else {
+      const sortedByAmount = filteredInvoices.sort(
+        (a, b) => b.amount - a.amount
+      );
+      setFilteredInvoices(sortedByAmount);
+      setAmountSortOrder("desc");
+    }
+  }
+
+  function sortByDueDate() {
+    if (dueDateSortOrder === "desc") {
+      const sortedByDueDate = filteredInvoices.sort(
+        (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()
+      );
+      setFilteredInvoices(sortedByDueDate);
+      setDueDateSortOrder("asc");
+    } else {
+      const sortedByDueDate = filteredInvoices.sort(
+        (a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()
+      );
+      setFilteredInvoices(sortedByDueDate);
+      setDueDateSortOrder("desc");
+    }
+  }
+
+  function filterForInvoice(value: string) {
+    if (invoices !== undefined) {
+      const invoicesFiltered = invoices.filter((invoice) =>
+        invoice.project.title.toLowerCase().includes(value.toLowerCase())
+      );
+      setFilteredInvoices(invoicesFiltered);
+    }
+  }
+
+  const columnDef: Array<{
+    columnName: string;
+    key: string[] | keyof Invoice;
+    isSortable?: boolean;
+    sortFn?: () => void;
+  }> = [
+    {
+      columnName: "Client",
+      key: ["project", "client", "name"],
+    },
+    {
+      columnName: "Project",
+      key: ["project", "title"],
+      isSortable: true,
+      sortFn: sortByProject,
+    },
+    {
+      columnName: "Due Date",
+      key: "dueDate",
+      isSortable: true,
+      sortFn: sortByDueDate,
+    },
+    {
+      columnName: "Amount",
+      key: "amount",
+      isSortable: true,
+      sortFn: sortByAmount,
+    },
+    {
+      columnName: "Status",
+      key: "status",
+    },
+  ];
 
   return (
-    <div className="p-6 bg-white border border-slate-400 rounded-lg mt-8">
-      {/* Search & Filter Section */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="relative w-full max-w-sm">
-          <input
-            placeholder="Filter emails..."
-            className="w-full px-4 py-2 pr-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <IconSearch className="absolute text-gray-400 size-5 right-3 top-1/2 transform -translate-y-1/2" />
-        </div>
-        <Button variant="outline" className="flex gap-2">
-          <ListFilter /> <span>Filter</span>
-        </Button>
-      </div>
-
-      {/* Table */}
-      {loading ? (
-        <div className="w-full flex justify-center">
-          <MainLoader />
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse border border-gray-300 rounded-lg">
-            <thead>
-              <tr className="bg-slate-200 text-gray-700">
-                <th className="p-3 text-left border border-gray-300">Client</th>
-                <th className="p-3 text-left border border-gray-300">
-                  Project
-                </th>
-                <th className="p-3 text-left border border-gray-300">
-                  Due Date
-                </th>
-                <th className="p-3 text-left border border-gray-300">Amount</th>
-                <th className="p-3 text-left border border-gray-300">Status</th>
-                <th className="p-3 text-center border border-gray-300">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentInvoices.length > 0 ? (
-                currentInvoices.map((invoice, idx) => (
-                  <tr
-                    key={idx}
-                    className="border border-gray-300 even:bg-slate-100 hover:bg-slate-50 transition-all"
-                  >
-                    <td className="p-3 border border-gray-300">
-                      {invoice.project.client.name}
-                    </td>
-                    <td className="p-3 border border-gray-300">
-                      {invoice.project.title}
-                    </td>
-                    <td className="p-3 border border-gray-300">
-                      {new Date(invoice.dueDate).toLocaleDateString()}
-                    </td>
-                    <td className="p-3 border border-gray-300">
-                      {invoice.currency} {invoice.amount}
-                    </td>
-                    <td className="p-3 border border-gray-300">
-                      {invoice.status}
-                    </td>
-                    <td className="p-3 border border-gray-300 text-center flex items-center justify-center">
-                      <Button variant={"outline"}>
-                        <FileDown /> Download
-                      </Button>
-                      <Button variant="outline" className="mx-2">
-                        <Pencil /> <span>Edit</span>
-                      </Button>
-                      <Button className="bg-red-500">
-                        <span>Delete</span> <Trash2 />
-                      </Button>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="p-4 text-center text-gray-500">
-                    No clients found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {invoices.length > 8 && (
-        <div className="pt-6 pb-3 border border-slate-300">
-          <Pagination>
-            <PaginationContent className="flex justify-center mt-4">
-              <PaginationItem>
-                <Button
-                  variant={"outline"}
-                  onClick={prevPage}
-                  disabled={currentPage === 1}
-                  className={
-                    currentPage === 1 ? "opacity-50 cursor-not-allowed" : ""
-                  }
-                >
-                  Previous
-                </Button>
-              </PaginationItem>
-
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <PaginationItem key={page}>
-                    <PaginationLink
-                      onClick={() => setCurrentPage(page)}
-                      className={
-                        currentPage === page
-                          ? "border border-slate-200 text-gray-600"
-                          : ""
-                      }
-                    >
-                      {page}
-                    </PaginationLink>
-                  </PaginationItem>
-                )
-              )}
-
-              <PaginationItem>
-                <Button
-                  variant={"outline"}
-                  onClick={nextPage}
-                  disabled={currentPage === totalPages}
-                  className={
-                    currentPage === totalPages
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
-                  }
-                >
-                  Next
-                </Button>
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
-        </div>
-      )}
-    </div>
+    <Table
+      type="invoice"
+      filterData={filterForInvoice}
+      isLoading={isLoading}
+      columnDef={columnDef}
+      currentItems={currentInvoices}
+      filteredItems={filteredInvoices}
+      prevPage={prevPage}
+      nextPage={nextPage}
+      currentPage={currentPage}
+      setCurrentPage={setCurrentPage}
+      totalPages={totalPages}
+    />
   );
 };
 

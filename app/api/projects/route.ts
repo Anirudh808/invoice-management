@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import getServerSession from "next-auth";
 import { authOptions } from "@/auth"; // Adjust path if needed
-import { db } from "@/lib/db";
+import { PrismaClient } from "@prisma/client";
+// import { db } from "@/lib/db";
+
+const prisma = new PrismaClient();
 
 export async function GET() {
   const session = getServerSession(authOptions);
@@ -12,20 +15,23 @@ export async function GET() {
   }
 
   const authUserId = authUser?.user?.id;
+  try {
+    const projects = await prisma.project.findMany({
+      where: {
+        userId: Number(authUserId),
+      },
+      include: {
+        client: true,
+      },
+    });
 
-  const projects = await db.project.findMany({
-    where: {
-      userId: Number(authUserId),
-    },
-    include: {
-      client: true,
-    },
-  });
-
-  return NextResponse.json({
-    message: "You are authenticated",
-    projects,
-  });
+    return NextResponse.json({
+      message: "You are authenticated",
+      projects,
+    });
+  } catch (err) {
+    console.log("Error in backend while fetching projects", err);
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -39,9 +45,13 @@ export async function POST(req: NextRequest) {
 
   try {
     const { title, description, dueDate, clientId } = await req.json();
-    const timestamp = new Date(dueDate).toISOString();
+    console.log(title, description, dueDate, clientId);
+    const timestamp = new Date(dueDate);
+    if (isNaN(timestamp.getTime())) {
+      return NextResponse.json({ error: "Invalid due date" }, { status: 400 });
+    }
 
-    const newProject = await db.project.create({
+    const newProject = await prisma.project.create({
       data: {
         title,
         description,

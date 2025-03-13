@@ -1,7 +1,7 @@
+import AddProject from "@/components/AddProject";
 import FileDownload from "@/components/icons/FileDownload";
 import ProjectTable from "@/components/ProjectTable";
 import { Button } from "@/components/ui/button";
-import { IconPlus } from "@tabler/icons-react";
 
 export default async function page() {
   return (
@@ -18,9 +18,7 @@ export default async function page() {
           >
             <FileDownload className="" /> Export
           </Button>
-          <Button className="bg-purple-500 px-6 py-3 text-lg rounded-md hover:bg-purple-700 cursor-pointer">
-            <IconPlus /> Add New
-          </Button>
+          <AddProject />
         </div>
       </div>
       <div className="w-full h-0.5 bg-slate-300 my-4"></div>

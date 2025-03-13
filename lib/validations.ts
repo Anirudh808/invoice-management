@@ -18,3 +18,10 @@ export const addClient = z.object({
   phone: z.string(),
   address: z.string(),
 });
+
+export const addProject = z.object({
+  title: z.string(),
+  description: z.string(),
+  dueDate: z.string(),
+  clientId: z.number(),
+});

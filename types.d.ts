@@ -36,3 +36,10 @@ export type Invoice = {
   userId: number;
   project: Project;
 };
+
+export type ColumnDef<T> = {
+  columnName: string;
+  key: keyof T | string[]; // Allow both keyof T and string[]
+  isSortable?: boolean;
+  sortFn?: () => void;
+};
